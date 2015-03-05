@@ -1,3 +1,9 @@
+samblaster0.1.21 (0.1.21-2) lucid; urgency=low
+
+  * Fix typo in manual page
+
+ -- Ian Ferguson <iferguso@genome.wustl.edu>  Thu, 05 Mar 2015 16:59:40 -0600
+
 samblaster0.1.21 (0.1.21-1) lucid; urgency=low
 
   * Initial package. Release samblaster version 0.1.21

@@ -9,7 +9,7 @@ Subject: [PATCH] Add a nice manual page.
 
 diff --git a/samblaster.1 b/samblaster.1
 new file mode 100644
-index 0000000..bb33309
+index 0000000..89c860c
 --- /dev/null
 +++ b/samblaster.1
 @@ -0,0 +1,311 @@
@@ -279,7 +279,7 @@ index 0000000..bb33309
 +Faust, G.G. and Hall, I.M., "\fISAMBLASTER\fR: fast duplicate marking and structural variant read extraction," \fIBioinformatics\fR Sept. 2014; \fB30\fR(17): 2503-2505.
 +.SS Journal URL
 +http://bioinformatics.oxfordjournals.org/content/30/17/2503
-+.SH SEE ALSO TODO
++.SH SEE ALSO
 +\fIsamtools\fR(1)
 +.RS
 +http://www.htslib.org/
