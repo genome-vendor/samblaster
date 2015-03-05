@@ -1,0 +1,311 @@
+.TH samblaster "1" "December 2014" "samblaster version 0.1.21" "User Commands"
+.SH NAME
+samblaster \- a tool to mark duplicates and extract discordant and split reads
+from sam files
+.SH SYNOPSIS
+.B For use as a post process on an aligner (eg. \f[BI]bwa mem\fB):
+.PP
+.RS 4
+.PD 0
+bwa mem index \fIsamp.r1.fq\fR \fIsamp.r2.fq\fR \\
+.RS 4
+.IP "| samblaster" 13
+[\fB\-e\fR] [\fB\-d\fR \fIsamp.disc.sam\fR] [\fB\-s\fR \fIsamp.split.sam\fR] \\
+.IP "| samtools" 11
+view \fB\-Sb\fR \- > \fIsamp.out.bam\fR
+.PD 1
+.RE
+.RE
+.PP
+.PP
+.B For use with a pre\-existing bam file to pull split, discordant and/or unmapped reads:
+.PP
+.RS 4
+.PD 0
+samtools view \fB\-h\fR \fIsamp.bam\fR \\
+.RS 4
+.IP "| samblaster" 13
+[\fB\-a\fR] [\fB\-e\fR] [\fB\-d\fR \fIsamp.disc.sam\fR] [\fB\-s\fR \fIsamp.split.sam\fR] [\fB\-u\fR \fIsamp.umc.fasta\fR] \fB\-o\fR \fI/dev/null\fR
+.PD 1
+.RE
+.RE
+.PP
+.PP
+.B To take input alignments directly from \f[BI]bwa mem\fB and output to
+\f[BI]samtools view\fB to compress SAM to BAM:
+.PP
+.RS 4
+.PD 0
+bwa mem index \fIsamp.r1.fq\fR \fIsamp.r2.fq\fR \\
+.RS 4
+| samblaster \\
+.IP "| samtools" 11
+view \fB\-Sb\fR \- > \fIsamp.out.bam\fR
+.PD 1
+.RE
+.RE
+.PP
+.PP
+.B To additionally output discordant read pairs and split read alignments:
+.PP
+.RS 4
+.PD 0
+bwa mem index \fIsamp.r1.fq\fR \fIsamp.r2.fq\fR \\
+.RS 4
+.IP "| samblaster" 13
+\fB\-e\fR \fB\-d\fR \fIsamp.disc.sam\fR \fB\-s\fR \fIsamp.split.sam\fR \\
+.IP "| samtools" 11
+view \fB\-Sb\fR \- > \fIsamp.out.bam\fR
+.PD 1
+.RE
+.RE
+.PP
+.PP
+.B To pull split reads and discordants read pairs from a pre\-existing BAM file with duplicates already marked:
+.PP
+.RS 4
+.PD 0
+samtools view \fI\-h\fR \fBsamp.bam\fR \\
+.RS 4
+.IP "| samblaster" 13
+\fB\-a\fR \fB\-e\fR \fB\-d\fR \fIsamp.disc.sam\fR \fB\-s\fR \fIsamp.split.sam\fR \fB\-o\fR \fI/dev/null\fR
+.PD 1
+.RE
+.RE
+.SH DESCRIPTION
+\fIsamblaster\fR is a fast and flexible program for marking duplicates in
+\fBread\-id grouped [1]\fR paired\-end \fBSAM\fR files. It can also optionally
+output discordant read pairs and/or split read mappings to separate \fBSAM\fR
+files, and/or unmapped/clipped reads to a separate \fBFASTQ\fR file. When
+marking duplicates, \fIsamblaster\fR will require approximately 20MB of memory
+per 1M read pairs.
+.SH OPTIONS
+.RS -4
+Default options enclosed in square brackets.
+.RE
+.SS Input/Output Options:
+.TP
+\fB\-i \-\-input\fR \fIFILE\fU
+Input sam file [\fIstdin\fR].
+.TP
+\fB\-o \-\-output\fR \fIFILE\fR
+Output sam file for all input alignments [\fIstdout\fR].
+.TP
+\fB\-d \-\-discordantFile\fR \fIFILE\fR
+Output discordant read pairs to this file. [\fIno discordant file output\fR]
+.TP
+\fB\-s \-\-splitterFile\fR \fIFILE\fR
+Output split reads to this file abiding by paramaters below. [\fIno splitter file output\fR]
+.TP
+\fB\-u \-\-unmappedFile\fR \fIFILE\fR
+Output unmapped/clipped reads as \fBFASTQ\fR to this file abiding by parameters below. [\fIno unmapped file output\fR]. Requires soft clipping in input file. Will output \fBFASTQ\fR if \fBQUAL\fR information available, otherwise \fBFASTA\fR.
+.SS Other Options:
+.TP
+\fB\-a \-\-acceptDupMarks\fR
+Accept duplicate marks already in input file instead of looking for duplicates
+in the input.
+.TP
+\fB\-e \-\-excludeDups\fR
+Exclude reads marked as duplicates from discordant, splitter, and/or unmapped
+file.
+.TP
+\fB\-r \-\-removeDups\fR
+Remove duplicates reads from all output files. (Implies \fB\-\-excludeDups\fR).
+.TP
+\fB\-\-addMateTags\fR
+Add MC and MQ tags to all output paired\-end SAM lines.
+.TP
+\fB\-\-maxSplitCount\fR \fIINT\fR
+Maximum number of split alignments for a read to be included in splitter file.
+[\fI2\fR]
+.TP
+\fB\-\-maxUnmappedBases\fR \fIINT\fR
+Maximum number of un\-aligned bases between two alignments to be included in
+splitter file. [\fI50\fR]
+.TP
+\fB\-\-minIndelSize\fR \fIINT\fR
+Minimum structural variant feature size for split alignments to be included in
+splitter file. [\fI50\fR]
+.TP
+\fB\-\-minNonOverlap\fR \fIINT\fR
+Minimum non\-overlaping base pairs between two alignments for a read to be
+included in splitter file. [\fI20\fR]
+.TP
+\fB\-\-minClipSize\fR \fIINT\fR
+Minumum number of bases a mapped read must be clipped to be included in
+unmapped file. [\fI20\fR]
+.TP
+\fB\-h \-\-help\fR
+Print samblaster help to stderr.
+.TP
+\fB\-q \-\-quiet\fR
+Output fewer statistics.
+.TP
+\fB\-\-version\fR
+Print samblaster version number to stderr.
+.SH USAGE
+By default, \fIsamblaster\fR reads \fBSAM\fR input from \fBstdin\fR and writes
+\fBSAM\fR to \fBstdout\fR. Input \fBSAM\fR file usually contain paired end data
+(see \fIDuplicate Identification\fR below), must contain a sequence header, and
+must be \fBread\-id grouped [1]\fR. By default, the output \fBSAM\fR file will
+contain all the alignments in the same order as the input, with duplicates
+marked with \fBSAM\fR \fBFLAG\fR \fB0x400\fR. The \fB\-\-removeDups\fR option
+will instead remove duplicate alignments from the output file.
+.SS Duplicate identification:
+A \fBduplicate\fR read pair is defined as a pair that has the same
+\fIsignature\fR for each mapped read as a previous read pair in the input
+\fBSAM\fR file. The \fIsignature\fR is comprised of the combination of the
+sequence name, strand, and the reference offset where the \fB5'\fR end of the
+read would fall if the read were fully aligned (not clipped) at its \fB5'\fR
+end. The \fB5'\fR aligned reference position is calculated using a combination
+of the \fBPOS\fR field, the strand, and the \fBCIGAR\fR string. This definition of
+\fIsignature\fR matches that used by \fIPicard MarkDuplicates\fR.
+.RS 4
+.nr step 1 1
+.IP \n[step]. 4
+For pairs in which both reads are mapped, both signatures must match.
+.IP \n+[step].
+For pairs in which only one side is mapped (an "orphan"), the signature of the
+mapped read must match a previously seen orphan. In an orphan pair, the
+unmapped read need not appear in the input file. In addition, mapped non\-paired
+single read alignments will be treated the same as an orphan pair with a
+missing unmapped read.
+.IP \n+[step].
+No doubly unmapped pair will be marked as a duplicate.
+.IP \n+[step].
+Any \fIsecondary\fR alignment (\fBFLAG\fR \fB0x100\fR or \fB0x800\fR)
+associated with a duplicate primary alignment will also be marked as a
+duplicate.
+.RE
+.SS Discordant read pair identification:
+A \fBdiscordant\fR read pair is one which meets all of the following criteria:
+.RS 4
+.nr step 1 1
+.IP \n[step]. 4
+Both side of the read pair are mapped (neither \fBFLAG\fR \fB0x4\fR or
+\fB0x8\fR is set).
+.IP \n+[step].
+The \fIproperly paired\fR \fBFLAG\fR (\fB0x2\fR) is not set.
+.IP \n+[step].
+Secondary alignments (\fBFLAG\fR \fB0x100\fR or \fB0x800\fR) are never output
+as discordant, although a discordant read pair can have secondary alignments
+associated with them.
+.IP \n+[step].
+Duplicate read pairs that meet the above criteria will be output as discordant
+unless the \fB\-e\fB option is used.
+.RE
+.SS Split read identification:
+\fBSplit Read\fR alignments are derived from a single read when one portion of
+the read aligns to a different region of the reference genome than another
+portion of the read. Such pairs of alignments often define a structural variant
+(SV) breakpoint, and are therefore useful input to SV detection algorithms such
+as \fILUMPY\fR (https://github.com/arq5x/lumpy\-sv/). \fIsamblaster\fR uses the
+following strategy to identify split reads alignments.
+.RS 4
+.nr step 1 1
+.IP \n[step]. 4
+Identify reads that have between two and \fB\-\-maxSplitCount\fR alignments. 
+.IP \n+[step].
+Sort these alignments by their strand\-normalized position along the read.
+.IP \n+[step].
+Two alignments are output as splitters if they are adjacent on the read, and
+meet these criteria:
+.RS 6
+.IP \[bu] 2
+Each covers at least \fB\-\-minNonOverlap\fR base pairs of the read that the other
+does not.
+.IP \[bu] 2
+The two alignments map to different reference sequences and/or strands.
+.IP \[bu] 2
+The two alignments map to the same sequence and strand, and represent a SV that
+is at least \fB\-\-minIndelSize\fR in length, and have at most
+\fB\-\-maxUnmappedBases\fR of un\-aligned base pairs between them.
+.RE
+.IP \n+[step].
+Split read alignments that are part of a duplicate read will be output unless the \fBe\fR option is used.
+.RE
+.SS Unmapped/clipped read identification:
+An \fBunmapped\fR or \fBclipped\fR read is one that is unaligned over all or
+part of its length respectively. The lack of a full alignment may be caused by
+a SV breakpoint that falls within the read. Therefore, \fIsamblaster\fR will
+optionally output such reads to a \fBFASTQ\fR file for re\-alignment by a tool, such
+as \fIYAHA\fR (http://faculty.virginia.edu/irahall/yaha/), geared toward
+finding split\-read mappings. \fIsamblaster\fR applies the following strategy to
+identify and output unmapped/clipped reads:
+.RS 4
+.nr step 1 1
+.IP \n[step]. 4
+An \fBunmapped\fR read has the \fIunmapped read\fR \fBFLAG\fR set (\fB0x4\fR).
+.IP \n+[step].
+A \fBclipped\fR read is a mapped read with a \fBCIGAR\fR string that begins or
+ends with at least \fBminClipSize\fR unaligned bases (\fBCIGAR\fR code \fBS\fR
+or \fBH\fR), and is not from a read that has one or more \fIsecondary\fR
+alignments (\fBFLAG\fR \fB0x100\fR).
+.IP \n+[step].
+In order for \fIsamblaster\fR to output the entire sequence for clipped reads,
+the input \fBSAM\fR file must have soft clipped primary alignments.
+.IP \n+[step].
+\fIsamblaster\fR will output unmapped/clipped reads into a \fBFASTQ\fR file if
+\fBQUAL\fR information is available in the input file, and a \fBFASTA\fR file
+if not.
+.IP \n+[step].
+Unmapped/clipped reads that are part of a duplicate read pair will be output
+unless the \fBe\fR option is used.
+.RE
+.SH AUTHOR
+.SS Written By
+Greg Faust (gf4ea@virginia.edu)
+.br
+.B Ira Hall Lab, University of Virginia
+.br
+http://faculty.virginia.edu/irahall/
+.SS Citation
+.TP
+Faust, G.G. and Hall, I.M., "\fISAMBLASTER\fR: fast duplicate marking and structural variant read extraction," \fIBioinformatics\fR Sept. 2014; \fB30\fR(17): 2503-2505.
+.SS Journal URL
+http://bioinformatics.oxfordjournals.org/content/30/17/2503
+.SH SEE ALSO
+\fIsamtools\fR(1)
+.RS
+http://www.htslib.org/
+.RE
+.PP
+\fIbwa\fR(1)
+.RS
+http://bio-bwa.sourceforge.net/
+.RE
+.PP
+.B Picard
+.RS
+http://broadinstitute.github.io/picard/
+.RE
+.PP
+.B YAHA
+.RS
+http://faculty.virginia.edu/irahall/yaha/
+.RE
+.PP
+.B LUMPY
+.RS
+https://github.com/arq5x/lumpy\-sv/
+.RE
+.PP
+.B The SAM File Format Specification
+.RS
+http://samtools.github.io/hts-specs/
+.RE
+.PP
+.B /usr/share/doc/samblaster0.1.21/SAMBLASTER_Supplemental.pdf.gz
+.RS
+Additonal discussion and statistics about the duplicates marked by \fIsamblaster\fR vs. \fIPicard\fR using the NA12878 sample dataset.
+.RE
+.SH FOOTNOTES
+.RS -4
+.nr step 1 1
+.IP [\n[step]] 4
+A \fBread-id grouped\fR SAM file is one in which all alignments for a
+read-id are grouped together in adjacent lines. Aligners naturally produce such
+files. They can also be created by sorting a SAM file by read-id. But as shown
+below, sorting the input to \fIsamblaster\fR by read-id is not required if the
+alignments are already grouped.
+.RE
